@@ -52,7 +52,7 @@ public class PaintbrushScript : MonoBehaviour
 	
 	void Update () 
     {
-        if (StrokeWeight < float.Epsilon) // TODO: Reevaluate this logic once everything else is working
+        if (StrokeWeight < float.Epsilon && _lastSegment.Weight < float.Epsilon)
         {
             return;
         }
