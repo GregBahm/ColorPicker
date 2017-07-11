@@ -6,7 +6,7 @@
 	}
 		SubShader
 	{
-		Tags{ "Queue" = "Transparent + 2" }
+		Tags{ "Queue" = "Transparent+2" }
 		Pass
 		{
 			Blend SrcAlpha OneMinusSrcAlpha

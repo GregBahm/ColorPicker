@@ -1,0 +1,29 @@
+﻿#pragma kernel StrokeWriter
+
+struct StrokeSegment
+{
+	float3 Position;
+	float3 Normal;
+	float Weight;
+	float3 Color;
+};
+
+uint _WriterIndex;
+float3 _Position;
+float3 _Normal;
+float _Weight;
+float3 _Color;
+
+RWStructuredBuffer<StrokeSegment> _StrokeSegmentsBuffer;
+
+[numthreads(1,1,1)]
+void StrokeWriter (uint3 id : SV_DispatchThreadID)
+{
+	StrokeSegment newSegment;
+	newSegment.Position = _Position;
+	newSegment.Normal = _Normal;
+	newSegment.Weight = _Weight;
+	newSegment.Color = _Color;
+	_StrokeSegmentsBuffer[_WriterIndex] = newSegment;
+}
+  
