@@ -27,6 +27,8 @@
 				float3 Color;
 			};
 
+			float4x4 _Transform;
+
 			struct v2g
 			{
 				StrokeSegment start : Normal; // I cant use TEXCOORD0 for some reason.
@@ -45,8 +47,8 @@
 
 			v2g vert(uint meshId : SV_VertexID, uint instanceId : SV_InstanceID)
 			{
-				StrokeSegment segmentStart = _StrokeSegmentsBuffer[instanceId - 1];
-				StrokeSegment segmentEnd = _StrokeSegmentsBuffer[instanceId];
+				StrokeSegment segmentStart = _StrokeSegmentsBuffer[instanceId];
+				StrokeSegment segmentEnd = _StrokeSegmentsBuffer[instanceId - 1];
 
 				v2g o;
 				o.start = segmentStart;
@@ -68,7 +70,7 @@
 				o.vertex = UnityObjectToClipPos(pointA);
 				o.color = startColor;
 				o.normal = startNormal;
-				o.viewDir = WorldSpaceViewDir(float4(pointA,1));
+				o.viewDir = WorldSpaceViewDir(float4(pointA, 1));
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(pointB);
@@ -90,14 +92,19 @@
 			void geo(point v2g p[1], inout TriangleStream<g2f> triStream)
 			{
 				float3 pointA = p[0].start.Position + p[0].start.Tangent * p[0].start.Weight;
+				pointA = mul(_Transform, float4(pointA, 1)).xyz;
 				float3 pointB = p[0].start.Position + -p[0].start.Tangent * p[0].start.Weight;
+				pointB = mul(_Transform, float4(pointB, 1)).xyz;
 
 				float3 pointC = p[0].end.Position + p[0].end.Tangent * p[0].end.Weight;
+				pointC = mul(_Transform, float4(pointC, 1)).xyz;
 				float3 pointD = p[0].end.Position + -p[0].end.Tangent * p[0].end.Weight;
+				pointD = mul(_Transform, float4(pointD, 1)).xyz;
 
 				DrawRibbonSide(triStream, pointA, pointB, pointC, pointD, p[0].start.Color, p[0].end.Color, p[0].start.Normal, p[0].end.Normal);
 				triStream.RestartStrip();
 				DrawRibbonSide(triStream, pointB, pointA, pointD, pointC, p[0].start.Color, p[0].end.Color, -p[0].start.Normal, -p[0].end.Normal);
+				triStream.RestartStrip();
 			}
 			
 			fixed4 frag (g2f i) : SV_Target
