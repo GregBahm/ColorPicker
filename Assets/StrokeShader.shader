@@ -2,12 +2,12 @@
 {
 	Properties
 	{
+		_CubeMap("Texture", CUBE) = "white" {}
 	}
 	SubShader
 	{
 		Pass
 		{
-			Cull Off
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma geometry geo
@@ -15,10 +15,14 @@
 			
 			#include "UnityCG.cginc"
 			
+
+			samplerCUBE _CubeMap;
+
 			struct StrokeSegment
 			{
 				float3 Position;
 				float3 Normal;
+				float3 Tangent;
 				float Weight;
 				float3 Color;
 			};
@@ -33,6 +37,8 @@
 			{
 				float4 vertex : SV_POSITION;
 				float3 color : COLOR0;
+				float3 normal : NORMAL;
+				float3 viewDir : VIEWDIR;
 			};
 
 			StructuredBuffer<StrokeSegment> _StrokeSegmentsBuffer;
@@ -48,34 +54,62 @@
 				return o;
 			}
 
-			[maxvertexcount(4)]
-			void geo(point v2g p[1], inout TriangleStream<g2f> triStream)
+			void DrawRibbonSide(inout TriangleStream<g2f> triStream,
+				float3 pointA,
+				float3 pointB,
+				float3 pointC,
+				float3 pointD,
+				float3 startColor,
+				float3 endColor,
+				float3 startNormal,
+				float3 endNormal)
 			{
-				float3 pointA = p[0].start.Position + p[0].start.Normal * p[0].start.Weight;
-				float3 pointB = p[0].start.Position + -p[0].start.Normal * p[0].start.Weight;
-
-				float3 pointC = p[0].end.Position + p[0].end.Normal * p[0].end.Weight;
-				float3 pointD = p[0].end.Position + -p[0].end.Normal * p[0].end.Weight;
-
 				g2f o;
 				o.vertex = UnityObjectToClipPos(pointA);
-				o.color = p[0].start.Color;
+				o.color = startColor;
+				o.normal = startNormal;
+				o.viewDir = WorldSpaceViewDir(float4(pointA,1));
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(pointB);
+				o.viewDir = WorldSpaceViewDir(float4(pointB, 1));
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(pointC);
-				o.color = p[0].end.Color;
+				o.color = endColor;
+				o.normal = endNormal;
+				o.viewDir = WorldSpaceViewDir(float4(pointC, 1));
 				triStream.Append(o);
 
 				o.vertex = UnityObjectToClipPos(pointD);
+				o.viewDir = WorldSpaceViewDir(float4(pointD, 1));
 				triStream.Append(o);
+			}
+
+			[maxvertexcount(8)]
+			void geo(point v2g p[1], inout TriangleStream<g2f> triStream)
+			{
+				float3 pointA = p[0].start.Position + p[0].start.Tangent * p[0].start.Weight;
+				float3 pointB = p[0].start.Position + -p[0].start.Tangent * p[0].start.Weight;
+
+				float3 pointC = p[0].end.Position + p[0].end.Tangent * p[0].end.Weight;
+				float3 pointD = p[0].end.Position + -p[0].end.Tangent * p[0].end.Weight;
+
+				DrawRibbonSide(triStream, pointA, pointB, pointC, pointD, p[0].start.Color, p[0].end.Color, p[0].start.Normal, p[0].end.Normal);
+				triStream.RestartStrip();
+				DrawRibbonSide(triStream, pointB, pointA, pointD, pointC, p[0].start.Color, p[0].end.Color, -p[0].start.Normal, -p[0].end.Normal);
 			}
 			
 			fixed4 frag (g2f i) : SV_Target
 			{
-				return float4(i.color, 1);
+				i.viewDir = normalize(i.viewDir);
+				float frenel = dot(i.viewDir, i.normal);
+				float3 reflectionUvs = reflect(-i.viewDir, i.normal);
+				float3 finalUvs = lerp(reflectionUvs, i.normal, frenel);
+				fixed3 reflectionCol = texCUBE(_CubeMap, finalUvs).xyz;
+				float diffuse = dot(i.normal, float3(0, 1, 0)) / 2 + .5;
+				float3 diffusedColor = i.color * reflectionCol;
+				return float4(diffusedColor, 1);
 			}
 			ENDCG
 		}
