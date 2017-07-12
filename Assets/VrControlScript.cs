@@ -10,6 +10,7 @@ public class VrControlScript : MonoBehaviour
     public Transform PaintbrushTip;
     public Transform PickerSphere;
     public Transform PickSelection;
+    public Transform PrimaryHandAnchor;
 
     public float MaxStrokeWeight;
     private bool _wasColorPicking;
@@ -19,6 +20,37 @@ public class VrControlScript : MonoBehaviour
         UpdateMaxStrokeWeight();
         UpdateActualStrokeWeight();
         UpdateColorPicker();
+        HandleUndoRedo();
+        MoveDrawing();
+    }
+
+    private void MoveDrawing()
+    {
+        bool leftHand = OVRInput.Get(OVRInput.Button.PrimaryHandTrigger);
+        if(leftHand)
+        {
+            PaintbrushScript.transform.SetParent(PrimaryHandAnchor, true);
+        }
+        else
+        {
+            PaintbrushScript.transform.SetParent(null, true);
+        }
+    }
+
+    private void HandleUndoRedo()
+    {
+        bool undoRequested = OVRInput.GetDown(OVRInput.Button.Two);
+        if(undoRequested)
+        {
+            Debug.Log("Undo Requested");
+            PaintbrushScript.Undo();
+        }
+        bool redoRequested = OVRInput.GetDown(OVRInput.Button.One);
+        if(redoRequested)
+        {
+            Debug.Log("Redo Requested");
+            PaintbrushScript.Redo();
+        }
     }
 
     private void UpdateColorPicker()

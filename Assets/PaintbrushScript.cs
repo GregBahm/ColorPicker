@@ -33,7 +33,7 @@ public class PaintbrushScript : MonoBehaviour
     public ComputeShader StrokeWriterCompute;
     public Material StrokeMaterial;
 
-    private int _undoIndex;
+    private int _undoIndex = -1;
     private int _currentStrokeSegmentsCount;
     private List<int> _undoStack;
 
@@ -41,19 +41,19 @@ public class PaintbrushScript : MonoBehaviour
     {
         _strokeWriterKernel = StrokeWriterCompute.FindKernel("StrokeWriter");
         _strokeSegmentsBuffer = new ComputeBuffer(StrokeSegmentMax, StrokeSegmentStride);
-        _lastSegment = GetStrokeSegment();
+        _lastSegment = GetStrokeSegment(false);
         _undoStack = new List<int>();
     }
     
-    private StrokeSegmentPart GetStrokeSegment()
+    private StrokeSegmentPart GetStrokeSegment(bool isStartOfANewStroke)
     {
         Vector3 normal = GetStrokeNormal();
         return new StrokeSegmentPart()
         {
-            Position = PaintbrushTip.position,
-            Normal = normal,
-            Tangent = PaintbrushTip.up,
-            Weight = StrokeWeight,
+            Position = transform.InverseTransformPoint(PaintbrushTip.position),
+            Normal = transform.InverseTransformVector(normal),
+            Tangent = transform.InverseTransformVector(PaintbrushTip.up),
+            Weight = isStartOfANewStroke ? 0 : StrokeWeight, // This is to prevent strokes connecting to one another
             Color = ColorPicker.CurrentColor
         };
     }
@@ -79,12 +79,12 @@ public class PaintbrushScript : MonoBehaviour
 
     public void Redo()
     {
-        if(_undoIndex > _undoStack.Count - 1)
+        if(_undoIndex > (_undoStack.Count - 2))
         {
             Debug.Log("No strokes to redo");
             return;
         }
-        int segmentsToRedo = _undoStack[_undoIndex];
+        int segmentsToRedo = _undoStack[_undoIndex + 1];
         _totalStrokeSegments += segmentsToRedo;
         _undoIndex++;
     }
@@ -94,13 +94,16 @@ public class PaintbrushScript : MonoBehaviour
         if(_undoIndex < _undoStack.Count - 1)
         {
             // They hit undo and then made some new stroke, so wipe the redo stack.
-            _undoStack.RemoveRange(_undoIndex, _undoStack.Count - _undoIndex); //TODO: Make sure these numbers are right
+            _undoStack.RemoveRange(_undoIndex + 1, _undoStack.Count - (_undoIndex + 1)); //TODO: Make sure these numbers are right
         }
 
         _undoStack.Add(_currentStrokeSegmentsCount);
         _currentStrokeSegmentsCount = 0;
         _undoIndex++;
+        Debug.Log("New Stroke Captured");
     }
+
+    private bool _isStartOfANewStroke;
 
     void Update () 
     {
@@ -110,6 +113,7 @@ public class PaintbrushScript : MonoBehaviour
             {
                 CaptureUndoOperation();
             }
+            _isStartOfANewStroke = true;
             return;
         }
 
@@ -120,9 +124,10 @@ public class PaintbrushScript : MonoBehaviour
         }
 
         _currentStrokeSegmentsCount++;
-        _lastSegment = GetStrokeSegment();
+        _lastSegment = GetStrokeSegment(_isStartOfANewStroke);
         FireStrokeWriter(_lastSegment, _totalStrokeSegments);
         _totalStrokeSegments++; //TODO: Handle what happens when we run out of stroke segments
+        _isStartOfANewStroke = false;
     }
 
     private void FireStrokeWriter(StrokeSegmentPart part, int strokeSegments)
@@ -145,7 +150,13 @@ public class PaintbrushScript : MonoBehaviour
     private void OnRenderObject()
     {
         StrokeMaterial.SetBuffer("_StrokeSegmentsBuffer", _strokeSegmentsBuffer);
+        StrokeMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
         StrokeMaterial.SetPass(0);
         Graphics.DrawProcedural(MeshTopology.Points, 1, _totalStrokeSegments);
+    }
+
+    private void OnDestroy()
+    {
+        _strokeSegmentsBuffer.Release();
     }
 }
