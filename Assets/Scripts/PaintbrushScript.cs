@@ -50,9 +50,9 @@ public class PaintbrushScript : MonoBehaviour
         Vector3 normal = GetStrokeNormal();
         return new StrokeSegmentPart()
         {
-            Position = transform.InverseTransformPoint(PaintbrushTip.position),
-            Normal = transform.InverseTransformVector(normal),
-            Tangent = transform.InverseTransformVector(PaintbrushTip.up),
+            Position = PaintbrushTip.position,
+            Normal = normal,
+            Tangent = PaintbrushTip.up,
             Weight = isStartOfANewStroke ? 0 : StrokeWeight, // This is to prevent strokes connecting to one another
             Color = ColorPicker.CurrentColor
         };
@@ -133,9 +133,9 @@ public class PaintbrushScript : MonoBehaviour
     private void FireStrokeWriter(StrokeSegmentPart part, int strokeSegments)
     {
         StrokeWriterCompute.SetInt("_WriterIndex", strokeSegments);
-        StrokeWriterCompute.SetVector("_Position", part.Position);
-        StrokeWriterCompute.SetVector("_Normal", part.Normal);
-        StrokeWriterCompute.SetVector("_Tangent", part.Tangent);
+        StrokeWriterCompute.SetVector("_Position", transform.InverseTransformPoint(part.Position));
+        StrokeWriterCompute.SetVector("_Normal", transform.InverseTransformVector(part.Normal));
+        StrokeWriterCompute.SetVector("_Tangent", transform.InverseTransformVector(part.Tangent));
         StrokeWriterCompute.SetFloat("_Weight", part.Weight);
         StrokeWriterCompute.SetVector("_Color", ColorToVector(part.Color));
         StrokeWriterCompute.SetBuffer(_strokeWriterKernel, "_StrokeSegmentsBuffer", _strokeSegmentsBuffer);

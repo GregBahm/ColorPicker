@@ -94,7 +94,7 @@
 				o.objSpace = v.vertex.xyz;
 				o.normal = mul(unity_ObjectToWorld, v.normal);
 				o.viewDir = WorldSpaceViewDir(v.vertex);
-				o.lightDir = mul(unity_ObjectToWorld, float3(0, 0, 1));
+				o.lightDir = mul(unity_ObjectToWorld, float3(0, 1, 1));
 				return o;
 			}
 			
@@ -104,12 +104,12 @@
 				i.viewDir = normalize(i.viewDir);
 
 				float3 reflection = reflect(i.viewDir, i.normal);
-				fixed4 cube = texCUBE(_CubeMap, reflection);
+				fixed4 cube = texCUBE(_CubeMap, -reflection);
 				float fresnel = saturate(1 - dot(i.normal, i.viewDir));
 				fresnel = pow(fresnel, 2);
 				
 				float shine = saturate(dot(i.normal, normalize(i.viewDir + i.lightDir)));
-				shine = pow(shine, 1000) * 10;
+				shine = saturate(pow(shine, 1000));
 				float diff = pow(length(i.boxSpace - i.objSpace), 5);
 				float3 col = i.boxSpace / 2 + .5;
 				col = lerp(col, cube, fresnel);

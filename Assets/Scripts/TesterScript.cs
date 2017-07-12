@@ -7,11 +7,20 @@ public class TesterScript : MonoBehaviour
     public PaintbrushScript Brush;
     public Transform PaintbrushTip;
     public Transform ColorPickerTip;
-    
-	// Update is called once per frame
-	void Update () 
+
+    private Vector3 _autoRotateVector;
+
+    private void Start()
+    {
+        _autoRotateVector = new Vector3(0.1f, .1f, .1f);
+    }
+
+    void Update () 
     {
         float weight = Mathf.Sin(UnityEngine.Time.fixedTime) / 2 + .5f;
         Brush.StrokeWeight = weight;
+        PaintbrushTip.Rotate(_autoRotateVector);
+
+        ColorPickerTip.transform.position = new Vector3(weight, 0, 0);
 	}
 }
