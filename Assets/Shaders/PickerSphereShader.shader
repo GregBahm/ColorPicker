@@ -30,7 +30,6 @@
 				float4 vertex : SV_POSITION;
 				float3 boxSpace : TEXCOORD2;
 				float3 objSpace : TEXCOORD3;
-				float diff : TEXCOORD1;
 			};
 
 			v2f vert (appdata v)
@@ -77,7 +76,6 @@
 				float4 vertex : SV_POSITION;
 				float3 boxSpace : TEXCOORD2;
 				float3 objSpace : TEXCOORD3;
-				float diff : TEXCOORD1;
 				float3 normal : NORMAL;
 				float3 viewDir : TEXCOORD5;
 				float3 lightDir : TEXCOORD4;

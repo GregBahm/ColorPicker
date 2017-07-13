@@ -6,11 +6,11 @@ public class EaseTowardsTarget : MonoBehaviour
 {
     public Transform Target;
     [Range(0, 1)]
-    public float PositionLerp;
+    public float PositionLerp = .5f;
     [Range(0, 1)]
-    public float RotationLerp;
+    public float RotationLerp = .5f;
     [Range(0, 1)]
-    public float ScaleLerp;
+    public float ScaleLerp = .5f;
 
     private Vector3 _lastPositionTarget;
     private Quaternion _lastRotationTarget;

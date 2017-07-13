@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class VrControlScript : MonoBehaviour
+public class SixDofControlScript : MonoBehaviour
 {
     public ColorPickerScript ColorPickerScript;
     public Transform PaintbrushTip;
@@ -26,19 +25,36 @@ public class VrControlScript : MonoBehaviour
     private EaseTowardsTarget _paintbrushEaser;
     private PaintbrushScript _paintbrushScript;
 
+
+    public bool ColorPicking;
+    public bool LeftHandPressed;
+    public bool RightHandPressed;
+    public float PickerSphereSizeModifier;
+    public bool UndoRequested;
+    public bool RedoRequested;
+    public float StrokeWeightAlpha;
+    public float StrokeWeightMaxModifier;
+
     private void Start()
     {
         _paintbrushEaser = PaintMotionDampener.GetComponent<EaseTowardsTarget>();
         _paintbrushScript = PaintMotionDampener.GetChild(0).GetComponent<PaintbrushScript>();
     }
 
-    void Update ()
+    void Update()
     {
         UpdateMaxStrokeWeight();
         UpdateActualStrokeWeight();
         UpdateColorPicker();
         HandleUndoRedo();
         MoveDrawing();
+        UpdateColorPickerSize();
+        UpdateScaleMode();
+    }
+
+    private void UpdateColorPickerSize()
+    {
+        ColorPickerScript.SphereSize *= 1 + PickerSphereSizeModifier / 30;
     }
 
     private void MoveDrawing()
@@ -47,13 +63,11 @@ public class VrControlScript : MonoBehaviour
         HandAverage.rotation = Quaternion.Lerp(MainHand.rotation, OffHand.rotation, .5f);
         HandAverage.LookAt(MainHand.position, HandAverage.up);
 
-        bool leftHand = OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.LTouch);
-        bool rightHand = OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch);
+        _scaleMode = LeftHandPressed && RightHandPressed;
 
-        _scaleMode = leftHand && rightHand;
-
-        _paintbrushEaser.Target = GetDampenerTarget(leftHand, rightHand);
+        _paintbrushEaser.Target = GetDampenerTarget(LeftHandPressed, RightHandPressed);
     }
+
     private Transform GetDampenerTarget(bool leftHand, bool rightHand)
     {
         if (leftHand && rightHand)
@@ -70,6 +84,7 @@ public class VrControlScript : MonoBehaviour
         }
         return null;
     }
+
     private void UpdateScaleMode()
     {
         if (_scaleMode)
@@ -78,13 +93,13 @@ public class VrControlScript : MonoBehaviour
             if (!_scaling)
             {
                 _scaling = true;
-                _initialScale = PaintMotionDampener.transform.localScale.x;
+                _initialScale = HandAverage.transform.localScale.x;
                 _initialHandDistance = dist;
             }
             else
             {
                 float newScale = _initialScale * (dist / _initialHandDistance);
-                PaintMotionDampener.transform.localScale = new Vector3(newScale, newScale, newScale);
+                HandAverage.transform.localScale = new Vector3(newScale, newScale, newScale);
             }
         }
         else
@@ -95,14 +110,12 @@ public class VrControlScript : MonoBehaviour
 
     private void HandleUndoRedo()
     {
-        bool undoRequested = OVRInput.GetDown(OVRInput.Button.Two);
-        if(undoRequested)
+        if (UndoRequested)
         {
             Debug.Log("Undo Requested");
             _paintbrushScript.Undo();
         }
-        bool redoRequested = OVRInput.GetDown(OVRInput.Button.One);
-        if(redoRequested)
+        if (RedoRequested)
         {
             Debug.Log("Redo Requested");
             _paintbrushScript.Redo();
@@ -111,22 +124,21 @@ public class VrControlScript : MonoBehaviour
 
     private void UpdateColorPicker()
     {
-        bool colorPicking = OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger);
-        PickerSphere.gameObject.SetActive(colorPicking);
-        PickSelection.gameObject.SetActive(colorPicking);
-        ColorPickerScript.enabled = colorPicking;
+        PickerSphere.gameObject.SetActive(ColorPicking);
+        PickSelection.gameObject.SetActive(ColorPicking);
+        ColorPickerScript.enabled = ColorPicking;
         if (!_wasColorPicking)
         {
             ColorPickerScript.RestoreSphereOffset();
         }
-        _wasColorPicking = colorPicking;
+        _wasColorPicking = ColorPicking;
     }
 
     private void UpdateActualStrokeWeight()
     {
-        float index = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger);
-        float easedWeight = Mathf.Lerp(_paintbrushScript.StrokeWeight, index * MaxStrokeWeight, .5f);
-        if(easedWeight < (MaxStrokeWeight / 100))
+        float newTargetWeight = Mathf.Pow(StrokeWeightAlpha, .5f) * MaxStrokeWeight;
+        float easedWeight = Mathf.Lerp(_paintbrushScript.StrokeWeight, newTargetWeight, .7f);
+        if (easedWeight < (MaxStrokeWeight / 1000))
         {
             easedWeight = 0; // Clip this off so strokes don't trail off too much.
         }
@@ -135,9 +147,7 @@ public class VrControlScript : MonoBehaviour
 
     private void UpdateMaxStrokeWeight()
     {
-        float paintbrushSizeModifier = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick).y;
-        MaxStrokeWeight += paintbrushSizeModifier / 100; //TODO: Adjust that value
-        MaxStrokeWeight = Mathf.Max(0, MaxStrokeWeight);
+        MaxStrokeWeight *= 1 + StrokeWeightMaxModifier / 30;
         PaintbrushTip.localScale = new Vector3(1, MaxStrokeWeight * 2, 1);
     }
 }
