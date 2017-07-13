@@ -5,19 +5,53 @@ using UnityEngine;
 public class EaseTowardsTarget : MonoBehaviour 
 {
     public Transform Target;
-    public float EaseRate = 0.1f;
+    [Range(0, 1)]
+    public float PositionLerp;
+    [Range(0, 1)]
+    public float RotationLerp;
+    [Range(0, 1)]
+    public float ScaleLerp;
 
-    void Update () 
+    private Vector3 _lastPositionTarget;
+    private Quaternion _lastRotationTarget;
+    private Vector3 _lastScaleTarget;
+
+    private Transform _lastTarget;
+    private Transform _payload;
+
+    void Start()
     {
-        if(Target == null)
+        _payload = transform.GetChild(0);
+        _lastPositionTarget = transform.position;
+        _lastRotationTarget = transform.rotation;
+        _lastScaleTarget = transform.localScale ;
+    }
+
+    void Update()
+    {
+        if (Target == null)
         {
-            return;
+            transform.position = Vector3.Lerp(transform.position, _lastPositionTarget, PositionLerp);
+            transform.rotation = Quaternion.Lerp(transform.rotation, _lastRotationTarget, RotationLerp);
+            transform.localScale = Vector3.Lerp(transform.localScale, _lastScaleTarget, ScaleLerp);
         }
-        Vector3 newPos = Vector3.Lerp(transform.position, Target.position, EaseRate);
-        Quaternion newRotation = Quaternion.Lerp(transform.rotation, Target.rotation, EaseRate);
-        Vector3 newScale = Vector3.Lerp(transform.localScale, Target.localScale, EaseRate);
-        transform.position = newPos;
-        transform.rotation = newRotation;
-        transform.localScale = newScale;
-	}
+        if (Target != null)
+        {
+            if (Target != _lastTarget)
+            {
+                _payload.parent = null;
+                transform.position = Target.position;
+                transform.rotation = Target.rotation;
+                transform.localScale = Target.localScale;
+                _payload.parent = transform;
+            }
+            transform.position = Vector3.Lerp(transform.position, Target.position, PositionLerp);
+            transform.rotation = Quaternion.Lerp(transform.rotation, Target.rotation, RotationLerp);
+            transform.localScale = Vector3.Lerp(transform.localScale, Target.localScale, ScaleLerp);
+            _lastPositionTarget = Target.position;
+            _lastRotationTarget = Target.rotation;
+            _lastScaleTarget = Target.localScale;
+        }
+        _lastTarget = Target;
+    }
 }

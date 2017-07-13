@@ -148,15 +148,17 @@
 			fixed4 frag (g2f i) : SV_Target
 			{
 				float distToEdge = (i.uv.y - .5) * 2;
-				distToEdge = pow(abs(distToEdge), 20) * sign(-distToEdge);
+				distToEdge = pow(abs(distToEdge), 50) * sign(-distToEdge);
 				i.normal = normalize(i.normal + i.tangent * distToEdge);
 
 				i.viewDir = normalize(i.viewDir);
-				float frenel = dot(i.viewDir,i.normal);
-				float3 reflectionUvs = reflect(-i.viewDir, i.normal);
-				float3 finalUvs = lerp(reflectionUvs, i.normal, frenel);
-				fixed3 reflectionCol = texCUBE(_CubeMap, finalUvs).xyz;
-				float diffuse = dot(i.normal, float3(0, 1, 0)) / 2 + .5;
+				float frenel = dot(-i.viewDir, i.normal);
+				float3 reflectionUvs = reflect(i.viewDir, i.normal);
+				float3 finalUvs = lerp(reflectionUvs, i.normal, pow(abs(frenel), 10));
+
+				fixed3 reflectionCol = texCUBE(_CubeMap, -i.normal).xyz;
+				reflectionCol = lerp(reflectionCol, 1, .5);
+				
 				float3 diffusedColor = i.color * reflectionCol;
 				return float4(diffusedColor, 1);
 			}

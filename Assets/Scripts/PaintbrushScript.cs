@@ -118,7 +118,7 @@ public class PaintbrushScript : MonoBehaviour
         }
 
         Vector3 paintBrushMovement = PaintbrushTip.position - _lastSegment.Position;
-        if (paintBrushMovement.magnitude < SegmentMinDist)
+        if (paintBrushMovement.magnitude < SegmentMinDist * StrokeWeight)
         {
             return;
         }

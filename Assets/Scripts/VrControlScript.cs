@@ -20,7 +20,7 @@ public class VrControlScript : MonoBehaviour
 
     public Transform MainHand;
     public Transform OffHand;
-    public Transform PaintbrushControl;
+    public Transform PaintMotionDampener;
     public Transform HandAverage;
 
     private EaseTowardsTarget _paintbrushEaser;
@@ -28,8 +28,8 @@ public class VrControlScript : MonoBehaviour
 
     private void Start()
     {
-        _paintbrushEaser = PaintbrushControl.GetComponent<EaseTowardsTarget>();
-        _paintbrushScript = PaintbrushControl.GetComponent<PaintbrushScript>();
+        _paintbrushEaser = PaintMotionDampener.GetComponent<EaseTowardsTarget>();
+        _paintbrushScript = PaintMotionDampener.GetChild(0).GetComponent<PaintbrushScript>();
     }
 
     void Update ()
@@ -78,13 +78,13 @@ public class VrControlScript : MonoBehaviour
             if (!_scaling)
             {
                 _scaling = true;
-                _initialScale = PaintbrushControl.transform.localScale.x;
+                _initialScale = PaintMotionDampener.transform.localScale.x;
                 _initialHandDistance = dist;
             }
             else
             {
                 float newScale = _initialScale * (dist / _initialHandDistance);
-                PaintbrushControl.transform.localScale = new Vector3(newScale, newScale, newScale);
+                PaintMotionDampener.transform.localScale = new Vector3(newScale, newScale, newScale);
             }
         }
         else
