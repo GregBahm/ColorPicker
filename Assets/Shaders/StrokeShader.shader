@@ -52,7 +52,6 @@
 			{
 				StrokeSegment segmentStart = _StrokeSegmentsBuffer[instanceId];
 				StrokeSegment segmentEnd = _StrokeSegmentsBuffer[instanceId - 1];
-
 				v2g o;
 				o.start = segmentStart;
 				o.end = segmentEnd;
@@ -105,7 +104,7 @@
 				triStream.Append(o);
 			}
 
-			#define _StrokeThickness 0.02
+			#define _StrokeThickness 1
 
 			[maxvertexcount(16)]
 			void geo(point v2g p[1], inout TriangleStream<g2f> triStream)

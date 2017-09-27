@@ -13,10 +13,10 @@ public class PaintbrushScript : MonoBehaviour
 
     public float StrokeWeight;
 
-    private const int StrokeSegmentMax = 16777216; // Just picking some random large number (2^24).
+    public const int StrokeSegmentMax = 16777216; // Just picking some random large number (2^24).
     private const int StrokeSegmentStride = sizeof(float) * 3 + sizeof(float) * 3 + sizeof(float) * 3 + sizeof(float) + sizeof(float) * 3; // Position Normal Tangent Weight Color
 
-    private struct StrokeSegmentPart
+    public struct StrokeSegmentPart
     {
         public Vector3 Position;
         public Vector3 Normal;
